@@ -1,5 +1,7 @@
 ﻿using Application.Abstract.Users;
+using Application.Dtos.Users;
 using EntityLayer.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,22 @@ namespace Application.Repositories.Users
         public bool CheckUserExist(string username, string password)
         {
             return _context.Users.Any(x => x.Username == username && x.Password == password);
+        }
+
+        public async Task<UserWithPermisson> CheckUserExistWithPerm(string username, string password)
+        {
+            var userwithPerm = await _context.Users.Include(x => x.UsersPermissions).FirstOrDefaultAsync(x => x.Username == username && x.Password == password);
+            return new UserWithPermisson
+            {
+                userId = userwithPerm.Id,
+                userName = userwithPerm.Username,
+                usersPermissions = userwithPerm.UsersPermissions.Select(p => new UsersPermission
+                {
+                    Id = p.Id,
+                    Active = p.Active,
+                    Perm = p.Perm
+                }).ToList()
+            };
         }
 
         public User GetSavedRefreshTokens(string username, string refreshtoken)

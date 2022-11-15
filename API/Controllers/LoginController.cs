@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 
 namespace API.Controllers
 {
@@ -21,14 +22,14 @@ namespace API.Controllers
         }
         [HttpPost]
         [Route("authenticate")]
-        public IActionResult Authenticate(JWTUsers usersdata)
+        public async Task<IActionResult> Authenticate(JWTUsers usersdata)
         {
             JWTUsers user = new JWTUsers
             {
                 username = usersdata.username,
                 password = usersdata.password,
             };
-            var token = _jWTService.Authenticate(user);
+            var token = await _jWTService.Authenticate(user);
 
             setTokenCookie(token.RefreshToken);
 

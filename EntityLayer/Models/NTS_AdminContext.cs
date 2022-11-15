@@ -73,6 +73,11 @@ namespace EntityLayer.Models
                     .IsUnicode(false);
 
                 entity.Property(e => e.UserId).HasColumnName("userId");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UsersPermissions)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK_Users_permission_Users");
             });
 
             OnModelCreatingPartial(modelBuilder);

@@ -11,5 +11,7 @@ namespace EntityLayer.Models
         public int? UserId { get; set; }
         public string Perm { get; set; }
         public byte? Active { get; set; }
+
+        public virtual User User { get; set; }
     }
 }
