@@ -1,5 +1,9 @@
+using ADMIN.Getways;
+using ADMIN.Getways.Interface;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace ADMIN
@@ -24,6 +29,40 @@ namespace ADMIN
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+
+            services.AddHttpClient("recipeService", client =>
+            {
+                client.BaseAddress = new Uri(Configuration["Service:BaseAddress"]);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            });
+
+
+            services.AddAuthentication(option =>
+            {
+                option.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                option.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                option.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            }).AddCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                options.LogoutPath = "/logout";
+                options.AccessDeniedPath = "/accessdenied";
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                options.Events.OnRedirectToLogin = opt =>
+                {
+                    opt.HttpContext.Response.Redirect("/login");
+                    return Task.FromResult(0);
+                };
+            });
+            
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
+
+            services.AddTransient<IResponseGetaway, ResponseGetaway>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -44,7 +83,10 @@ namespace ADMIN
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
+            
+            app.UseCookiePolicy();
 
             app.UseEndpoints(endpoints =>
             {

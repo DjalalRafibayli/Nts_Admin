@@ -30,13 +30,11 @@ namespace API.Controllers
                 password = usersdata.password,
             };
             var token = await _jWTService.Authenticate(user);
-
-            setTokenCookie(token.RefreshToken);
-
             if (token == null)
             {
                 return Unauthorized();
             }
+            setTokenCookie(token.RefreshToken);
 
             return Ok(token);
         }

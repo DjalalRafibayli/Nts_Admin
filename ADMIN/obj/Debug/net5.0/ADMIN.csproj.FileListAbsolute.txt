@@ -37,3 +37,10 @@ C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\obj\Debug\net5.0\ADMIN.pdb
 C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\obj\Debug\net5.0\ADMIN.genruntimeconfig.cache
 C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\obj\Debug\net5.0\ref\ADMIN.dll
 C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\obj\Debug\net5.0\ADMIN.csproj.CopyComplete
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\obj\Debug\net5.0\Razor\Views\Login\Index.cshtml.g.cs
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\bin\Debug\net5.0\Newtonsoft.Json.dll
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\bin\Debug\net5.0\JWT.dll
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\bin\Debug\net5.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\bin\Debug\net5.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\bin\Debug\net5.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\c.rafibayli\source\repos\NTS_ADMIN\ADMIN\bin\Debug\net5.0\System.IdentityModel.Tokens.Jwt.dll

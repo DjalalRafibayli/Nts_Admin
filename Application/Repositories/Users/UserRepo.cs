@@ -24,7 +24,7 @@ namespace Application.Repositories.Users
             return _context.Users.Any(x => x.Username == username && x.Password == password);
         }
 
-        public async Task<UserWithPermisson> CheckUserExistWithPerm(string username, string password)
+        public async Task<UserWithPermisson> UserWithPerm(string username, string password)
         {
             var userwithPerm = await _context.Users.Include(x => x.UsersPermissions).FirstOrDefaultAsync(x => x.Username == username && x.Password == password);
             return new UserWithPermisson

@@ -56,6 +56,8 @@ namespace API
                     ValidIssuer = Configuration["JWT:Issuer"],
                     ValidAudience = Configuration["JWT:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Key),
+                    LifetimeValidator = (notBefore, expires, securityToken, validationParameters) => expires != null ? expires > DateTime.UtcNow : false
+                    //LifetimeValidator = (DateTime? notBefore,DateTime? expires,SecurityToken securityToken,TokenValidationParameters validationParameters) => true
                 };
                 o.Events = new JwtBearerEvents
                 {
@@ -64,7 +66,7 @@ namespace API
                     {
                         string authorization = context.Request.Headers["Authorization"];
 
-                        // If no authorization header found, nothing to process further
+                    // If no authorization header found, nothing to process further
                         if (string.IsNullOrEmpty(authorization))
                         {
                             context.NoResult();
@@ -76,7 +78,7 @@ namespace API
                             context.Token = authorization.Substring("Bearer ".Length).Trim();
                         }
 
-                        // If no token found, no further work possible
+                    // If no token found, no further work possible
                         if (string.IsNullOrEmpty(context.Token))
                         {
                             context.NoResult();
@@ -119,7 +121,7 @@ namespace API
                                      Id = "Bearer"
                                  }
                              },
-                             new string[] {}
+                             new string[] { }
                      }
                  });
             });
@@ -146,6 +148,7 @@ namespace API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

@@ -31,20 +31,21 @@ namespace API.JWT.Repository
             {
                 return null;
             }
-            var userPerm = await _userDal.CheckUserExistWithPerm(jWTUsers.username, jWTUsers.password);
-            var claims = new List<Claim>();
+            var userPerm = await _userDal.UserWithPerm(jWTUsers.username, jWTUsers.password);
+            var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Name, jWTUsers.username)
+            };
             var roles = userPerm.usersPermissions;
-            //foreach (var role in roles)
-            //{
-            //    claims.Add(new Claim(ClaimTypes.Role, role.Perm));
-            //}
+            
             claims.AddRange(roles.Select(role => new Claim(ClaimsIdentity.DefaultRoleClaimType, role.Perm)));
+            
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenKey = Encoding.ASCII.GetBytes(_configuration["JWT:Key"]);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddSeconds(10),
+                Expires = DateTime.UtcNow.AddMinutes(10),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature),
             };
 
