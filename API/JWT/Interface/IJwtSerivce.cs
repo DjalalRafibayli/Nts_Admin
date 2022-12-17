@@ -7,7 +7,7 @@ namespace API.JWT.Interface
     public interface IJwtSerivce
     {
         Task<Tokens> Authenticate(JWTUsers jWTUsers);
-        Tokens GenerateRefreshToken(string username);
+        Task<Tokens> GenerateRefreshToken(string username, string refreshToken);
         ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
         string GenerateRefreshTokenFirst();
     }

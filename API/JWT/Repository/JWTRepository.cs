@@ -37,15 +37,15 @@ namespace API.JWT.Repository
                 new Claim(ClaimTypes.Name, jWTUsers.username)
             };
             var roles = userPerm.usersPermissions;
-            
+
             claims.AddRange(roles.Select(role => new Claim(ClaimsIdentity.DefaultRoleClaimType, role.Perm)));
-            
+
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenKey = Encoding.ASCII.GetBytes(_configuration["JWT:Key"]);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(10),
+                Expires = DateTime.UtcNow.AddSeconds(20),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature),
             };
 
@@ -65,23 +65,34 @@ namespace API.JWT.Repository
             return tokens;
         }
 
-        public Tokens GenerateRefreshToken(string username)
+        public async Task<Tokens> GenerateRefreshToken(string username, string refreshToken)
         {
             try
             {
+                var user = _userDal.GetSavedRefreshTokens(username, refreshToken);
+                if (user is null)
+                {
+                    return null;
+                }
+                var userPerm = await _userDal.UserWithPerm(user.Username, user.Password);
+                var claims = new List<Claim>()
+                {
+                    new Claim(ClaimTypes.Name, username)
+                };
+                var roles = userPerm.usersPermissions;
+
+                claims.AddRange(roles.Select(role => new Claim(ClaimsIdentity.DefaultRoleClaimType, role.Perm)));
+
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"]);
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
-                    Subject = new ClaimsIdentity(new Claim[]
-                  {
-                 new Claim(ClaimTypes.Name, username)
-                  }),
-                    Expires = DateTime.Now.AddMinutes(30),
+                    Subject = new ClaimsIdentity(claims),
+                    Expires = DateTime.Now.AddSeconds(20),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
                 };
                 var token = tokenHandler.CreateToken(tokenDescriptor);
-                var refreshToken = GenerateRefreshTokenFirst();
+                refreshToken = GenerateRefreshTokenFirst();
                 return new Tokens { Token = tokenHandler.WriteToken(token), RefreshToken = refreshToken };
             }
             catch (Exception ex)

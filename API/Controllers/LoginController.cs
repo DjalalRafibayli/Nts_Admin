@@ -40,7 +40,7 @@ namespace API.Controllers
         }
         [HttpPost]
         [Route("refresh")]
-        public IActionResult Refresh(Tokens token)//,string username
+        public async Task<IActionResult> Refresh(Tokens token)//,string username
         {
             try
             {
@@ -62,7 +62,7 @@ namespace API.Controllers
                     return Unauthorized("Invalid attempt!");
                 }
 
-                var newJwtToken = _jWTService.GenerateRefreshToken(username);
+                var newJwtToken = await _jWTService.GenerateRefreshToken(username,token.RefreshToken);
 
                 if (newJwtToken == null)
                 {
@@ -83,23 +83,23 @@ namespace API.Controllers
         //ancaq refresh token parametri gondermekle token almaq
         [HttpPost]
         [Route("refreshToken")]
-        public IActionResult RefreshToken([FromForm] string refreshToken)//,string username
+        public async Task<IActionResult> RefreshToken(JWTRefresh refreshtoken)//,string username
         {
             try
             {
                 //retrieve the saved refresh token from database
-                var savedRefreshToken = _userDal.GetSavedRefreshTokensWithRefresh(refreshToken);
+                var savedRefreshToken = _userDal.GetSavedRefreshTokensWithRefresh(refreshtoken.refreshToken);
 
                 if (savedRefreshToken == null)
                 {
                     return Unauthorized("Invalid attempt!");
                 }
-                if (savedRefreshToken.RefreshToken != refreshToken || savedRefreshToken.RefreshTokenExpireTime <= DateTime.Now)
+                if (savedRefreshToken.RefreshToken != refreshtoken.refreshToken || savedRefreshToken.RefreshTokenExpireTime <= DateTime.Now)
                 {
                     return Unauthorized("Invalid attempt!");
                 }
 
-                var newJwtToken = _jWTService.GenerateRefreshToken(savedRefreshToken.Username);
+                var newJwtToken = await _jWTService.GenerateRefreshToken(savedRefreshToken.Username,savedRefreshToken.RefreshToken);
 
                 if (newJwtToken == null)
                 {

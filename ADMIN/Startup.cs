@@ -1,5 +1,7 @@
 using ADMIN.Getways;
 using ADMIN.Getways.Interface;
+using ADMIN.Services.IdentityService;
+using ADMIN.Services.Middleware;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -28,15 +30,26 @@ namespace ADMIN
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpContextAccessor();
             services.AddControllersWithViews();
 
+            #region HttpclientFactory
+            services.AddTransient<MyDelegatingHandler>();
             services.AddHttpClient("recipeService", client =>
             {
                 client.BaseAddress = new Uri(Configuration["Service:BaseAddress"]);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            });
+            }).AddHttpMessageHandler<MyDelegatingHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(5));
 
+            services.AddHttpClient("refreshService", client =>
+            {
+                client.BaseAddress = new Uri(Configuration["Service:BaseAddress"]);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            }).SetHandlerLifetime(TimeSpan.FromSeconds(5));
+            #endregion
 
+            #region CookieBasedAuthentification
             services.AddAuthentication(option =>
             {
                 option.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -44,9 +57,8 @@ namespace ADMIN
                 option.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             }).AddCookie(options =>
             {
-                options.Cookie.HttpOnly = true;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-                options.LogoutPath = "/logout";
+                options.LogoutPath = new PathString("/Logout") ;
                 options.AccessDeniedPath = "/accessdenied";
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
                 options.Events.OnRedirectToLogin = opt =>
@@ -55,22 +67,29 @@ namespace ADMIN
                     return Task.FromResult(0);
                 };
             });
-            
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
+            #endregion
 
+            #region Extentions
             services.AddTransient<IResponseGetaway, ResponseGetaway>();
+            services.AddTransient<IIdentityService, IdentityService>();
+            #endregion
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            
+
             if (env.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage();
+                app.UseMiddleware<UnauthorizedExceptionMiddleware>();
+                //app.UseDeveloperExceptionPage();
             }
             else
             {
@@ -85,8 +104,7 @@ namespace ADMIN
 
             app.UseAuthentication();
             app.UseAuthorization();
-            
-            app.UseCookiePolicy();
+
 
             app.UseEndpoints(endpoints =>
             {

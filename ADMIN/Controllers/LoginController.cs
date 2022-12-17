@@ -1,10 +1,15 @@
 ﻿using ADMIN.Getways.Interface;
 using ADMIN.Models.CustomModels.Login;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Security.Claims;
@@ -17,11 +22,13 @@ namespace ADMIN.Controllers
     {
         private readonly IResponseGetaway _responseGetaway;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public LoginController(IConfiguration configuration, IResponseGetaway responseGetaway)
+        public LoginController(IConfiguration configuration, IResponseGetaway responseGetaway, IHttpContextAccessor httpContextAccessor)
         {
             _configuration = configuration;
             _responseGetaway = responseGetaway;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public IActionResult Index()
@@ -42,22 +49,71 @@ namespace ADMIN.Controllers
             var tokens = JsonConvert.DeserializeObject<JWTModel>(response);
 
             if (!string.IsNullOrEmpty(tokens.Token) && !string.IsNullOrEmpty(tokens.RefreshToken))
+            {
                 responseModel.isAuth = true;
+                var principal = GetPrincipalFromToken(tokens.Token);
+                if (principal != null)
+                {
+                    await SignIn(principal, tokens);
+                }
+            }
             else
                 responseModel.message = "Wrong Password or Username";
 
-            var principal = GetPrincipalFromExpiredToken(tokens.Token);
-            var username = principal.Identity?.Name;
-
-			foreach (Claim claim in principal.Claims)
-			{
-               
-			}
-
-
             return Json(new { status = 200, responseModel = responseModel });
         }
-        public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        [HttpGet]
+        public async Task<IActionResult> Logout()
+        {
+            await _httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Index", "Login");
+        }
+        public async Task SignIn(ClaimsPrincipal principal, JWTModel tokens)
+        {
+            var username = principal.Identity?.Name;
+
+            var claims = new List<Claim>()
+                {
+                    new Claim(ClaimTypes.Name, username),
+                };
+            //bununla da jwtnin daxilini oxumaq olar
+            //var token = new JwtSecurityTokenHandler().ReadJwtToken(tokens.Token);
+            //var jwtIdentity = new ClaimsPrincipal(new ClaimsIdentity(token.Claims));
+
+            foreach (Claim claim in principal.Claims)
+            {
+                if (claim.Type == ClaimsIdentity.DefaultRoleClaimType)
+                {
+                    claims.Add(new Claim(ClaimsIdentity.DefaultRoleClaimType, claim.Value));
+                }
+            }
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            CookieOptions cookieOptionsToken = new CookieOptions();
+            cookieOptionsToken.Expires = DateTime.Now.AddMinutes(10);
+
+            CookieOptions cookieOptions = new CookieOptions();
+            cookieOptions.Expires = DateTime.Now.AddHours(0.5);
+
+            AuthenticationProperties authenticationProperties = new();
+
+            authenticationProperties.StoreTokens(new List<AuthenticationToken> {
+                new AuthenticationToken
+                {
+                    Name =OpenIdConnectParameterNames.AccessToken,
+                    Value = tokens.Token
+                },
+                new AuthenticationToken
+                {
+                    Name =OpenIdConnectParameterNames.RefreshToken,
+                    Value = tokens.RefreshToken
+                },
+            });
+
+            var identityClaim = new ClaimsPrincipal(identity);
+            await _httpContextAccessor.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, identityClaim, authenticationProperties);
+        }
+        public ClaimsPrincipal GetPrincipalFromToken(string token)
         {
             try
             {
